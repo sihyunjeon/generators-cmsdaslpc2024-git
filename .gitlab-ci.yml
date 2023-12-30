@@ -1,0 +1,118 @@
+image: gitlab-registry.cern.ch/ci-tools/ci-worker:cc7
+
+stages:
+  - standalone
+  - gridpack
+  - partonshower
+  - optional
+
+before_script:
+  - yum install -y python3 python3-pip python3-devel
+  - which python3
+
+standalone:
+  stage: standalone
+  tags:
+    - cvmfs
+  script:
+    - source /cvmfs/cms.cern.ch/cmsset_default.sh
+    - scram p CMSSW_12_4_14_patch2
+    - cd CMSSW_12_4_14_patch2/src/
+    - cmsenv
+    - cd ../../
+    - wget https://cms-project-generators.web.cern.ch/cms-project-generators/MG5_aMC_v3.5.2.tar.gz
+    - tar -xvf MG5_aMC_v3.5.2.tar.gz
+    - rm MG5_aMC_v3.5.2.tar.gz
+    - cd MG5_aMC_v3_5_2
+    - cp -r ../standalone .
+    - echo "Execute setup script for madgraph"
+    - ./bin/mg5_aMC standalone/setup.config
+    - echo "Run drellyan process"
+    - ./bin/mg5_aMC standalone/drellyan-mll4.config # 3.903e+04
+    - cp /builds/shjeon/citests-fordesydas/MG5_aMC_v3_5_2/standalone-drellyan-mll4/Events/run_01/unweighted_events.lhe.gz ../standalone-drellyan-mll4.lhe.gz
+    - ./bin/mg5_aMC standalone/drellyan-mll10.config # 6380
+    - cp /builds/shjeon/citests-fordesydas/MG5_aMC_v3_5_2/standalone-drellyan-mll10/Events/run_01/unweighted_events.lhe.gz ../standalone-drellyan-mll10.lhe.gz
+    - ./bin/mg5_aMC standalone/drellyan-mll50.config # 1507
+    - cp /builds/shjeon/citests-fordesydas/MG5_aMC_v3_5_2/standalone-drellyan-mll50/Events/run_01/unweighted_events.lhe.gz ../standalone-drellyan-mll50.lhe.gz
+    - echo "Run ttbar process"
+    - ./bin/mg5_aMC standalone/ttbar.config
+    - cp /builds/shjeon/citests-fordesydas/MG5_aMC_v3_5_2/standalone-ttbar/Events/run_01/unweighted_events.lhe.gz ../standalone-ttbar.lhe.gz
+  artifacts:
+    expire_in: 12 hours
+    paths:
+      - CMSSW_12_4_14_patch2
+      - standalone-drellyan-mll4.lhe.gz
+      - standalone-drellyan-mll10.lhe.gz
+      - standalone-drellyan-mll50.lhe.gz
+
+gridpack:
+  stage: gridpack
+  tags:
+    - cvmfs
+  script:
+    - git clone --depth 1 https://github.com/cms-sw/genproductions.git
+    - cd genproductions/bin/MadGraph5_aMCatNLO
+    - cp -r ../../../gridpack .
+    - export NB_CORE=1
+    - ./gridpack_generation.sh drellyan-mll50-0j gridpack/drellyan-mll50-0j pdmv
+    - cp drellyan-mll50-0j_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz ../../../
+    - ./gridpack_generation.sh drellyan-mll50-012j gridpack/drellyan-mll50-012j pdmv
+    - cp drellyan-mll50-012j_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz ../../../
+    - cd ../../../
+    - mkdir LHEtest
+    - cp drellyan-mll50-0j_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz LHEtest/
+    - cd LHEtest
+    - tar -xvf drellyan-mll50-0j_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz
+    - ./runcmsgrid.sh 1000 1 1
+  artifacts:
+    expire_in: 12 hours
+    paths:
+      - drellyan-mll50-0j_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz
+      - drellyan-mll50-012j_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz
+
+partonshower:
+  stage: partonshower
+  tags:
+    - cvmfs
+  script:
+    - cd CMSSW_12_4_14_patch2/src
+    - cmsenv
+    - mkdir Configuration/GenProduction/python/
+    - cp fragment/dyto2e_0j.py Configuration/GenProduction/python/
+    - mkdir test
+    - cd test
+    - cmsDriver.py Configuration/GenProduction/python/dyto2e_0j.py --python_filename dyto2e_0j.py --eventcontent RAWSIM,LHE --datatier GEN,LHE --fileout file:dyto2e_0j.root --conditions auto:mc --beamspot NoSmear --step LHE,GEN --geometry DB:Extended --no_exec --mc -n 5000
+    - cmsRun dyto2e_0j.py
+    - ls -alh
+
+optional-rivet:
+  stage: optional
+  tags:
+    - cvmfs
+  script:
+    - exit
+    - yum install -y openldap-devel gzip texlive ghostscript ImageMagick
+    - export PATH="/Library/TeX/texbin:$PATH"
+    - cp fragment/test.py CMSSW_12_4_14_patch2/src/
+    - source /cvmfs/cms.cern.ch/cmsset_default.sh
+    - cd CMSSW_12_4_14_patch2/src/
+    - cmsenv
+    - cd MG5_aMC_v2_9_13
+    - echo "generate p p > t t~" > mgtest
+    - echo "output testrun" >> mgtest
+    - echo "launch" >> mgtest
+    - echo "set nevents 1000" >> mgtest
+    - ./bin/mg5 mgtest
+    - cd ..
+    - cp MG5_aMC_v2_9_13/testrun/Events/run_01/*.lhe.gz ./test.lhe.gz
+    - gzip -d test.lhe.gz
+    - cmsRun test.py
+    - rivet-mkhtml test.yoda
+    - rm rivet-plots/*/*.dat
+    - rm rivet-plots/*/*.png
+  artifacts:
+    expire_in: 12 hours
+    paths:
+      - CMSSW_12_4_14_patch2/src/rivet-plots
+
+
