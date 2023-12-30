@@ -1,0 +1,3 @@
+import model sm-no_b_mass
+generate p p > e+ e-
+output drellyan-mll50-0j
