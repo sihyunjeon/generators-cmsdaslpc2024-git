@@ -75,13 +75,14 @@ partonshower:
   tags:
     - cvmfs
   script:
+    - source /cvmfs/cms.cern.ch/cmsset_default.sh
     - cd CMSSW_12_4_14_patch2/src
     - cmsenv
-    - mkdir Configuration/GenProduction/python/
-    - cp fragment/dyto2e_0j.py Configuration/GenProduction/python/
+    - mkdir -p Configuration/GenProduction/python/
+    - cp ../../fragment/dyto2e_0j.py Configuration/GenProduction/python/
     - mkdir test
     - cd test
-    - cmsDriver.py Configuration/GenProduction/python/dyto2e_0j.py --python_filename dyto2e_0j.py --eventcontent RAWSIM,LHE --datatier GEN,LHE --fileout file:dyto2e_0j.root --conditions auto:mc --beamspot NoSmear --step LHE,GEN --geometry DB:Extended --no_exec --mc -n 5000
+    - cmsDriver.py Configuration/GenProduction/python/dyto2e_0j.py --python_filename test.py --eventcontent NANOAOD --datatier NANOAOD --fileout file:output.root --conditions auto:mc --step LHE,GEN,NANOGEN --no_exec --mc -n 50
     - cmsRun dyto2e_0j.py
     - ls -alh
 
