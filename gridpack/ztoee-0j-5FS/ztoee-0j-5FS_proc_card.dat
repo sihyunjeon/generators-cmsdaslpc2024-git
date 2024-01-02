@@ -1,0 +1,3 @@
+import model sm-no_b_mass
+generate p p > z, z > e+ e-
+output ztoee-0j-5FS
