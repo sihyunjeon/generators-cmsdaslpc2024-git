@@ -4,7 +4,7 @@ import os
 GENGRIDPACKPATH = os.getenv("GENGRIDPACKPATH")
 
 externalLHEProducer = cms.EDProducer('ExternalLHEProducer',
-    args = cms.vstring(GENGRIDPACKPATH + "/bin/MadGraph5_aMCatNLO/dytoee-0j_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz"),
+    args = cms.vstring(GENGRIDPACKPATH + "/bin/MadGraph5_aMCatNLO/drellyan-mll50_slc7_amd64_gcc10_CMSSW_12_4_8_tarball.tar.xz"),
     nEvents = cms.untracked.uint32(5000),
     numberOfParameters = cms.uint32(1),
     outputFile = cms.string('cmsgrid_final.lhe'),
