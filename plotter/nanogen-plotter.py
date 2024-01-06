@@ -59,7 +59,7 @@ def main():
     hist_MLLs = {}
     hist_PTLLs = {}
     legend = ROOT.TLegend(0.7, 0.6, 0.8, 0.8)
-    for sample in ["drellyan-mll50", "drellyan-mll50-01j"]:
+    for sample in ["drellyan-mll50"]:
         hist_MLL, hist_PTLL = process(sample)
         hist_MLLs[sample] = hist_MLL
         hist_PTLLs[sample] = hist_PTLL
