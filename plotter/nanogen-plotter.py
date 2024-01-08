@@ -16,7 +16,7 @@ COLORS =  {
 
 def process(sample):
 
-    file_open = ROOT.TFile.Open(f"/tmp/GENTUTORIAL/{sample}.root")
+    file_open = ROOT.TFile.Open(f"root://cmseos.fnal.gov//store/user/cmsdas/2024/short_exercises/generators/{sample}.root")
     ROOT.gROOT.cd()
     tree = file_open.Get("Events")
     nevents = tree.GetEntries()
